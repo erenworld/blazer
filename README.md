@@ -6,6 +6,13 @@ Blazer analyzes the compiler’s assembly output to identify source lines that a
 ## Why
 Go may remove entire branches when it can statically determine that a condition is always true or always false. This frequently happens with typed nil values returned through interfaces, leading to subtle logical issues. Blazer highlights these cases by detecting missing source lines in the final assembly.
 
+A source line disappears from assembly when the Go optimizer proves that the code:
+- does nothing
+- is unreachable
+- is a dead conditional branch
+- is always replaced by a constant
+- or is simplified away entirely
+
 ## How Blazer Works
 1. Compile the file with `-gcflags=-S` to obtain the assembly output.
 2. Extract the line numbers that appear in the compiler output.
