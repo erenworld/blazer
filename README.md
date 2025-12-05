@@ -1,4 +1,4 @@
-## Blazer
+## ⚡️ Blazer
 Go linter that reports code removed by the Go compiler’s optimizations.
 
 Blazer analyzes the compiler’s assembly output to identify source lines that are eliminated during compilation. Removed lines often indicate constant conditions, unreachable code, or incorrect handling of typed nil values in interfaces.
@@ -7,7 +7,7 @@ Blazer analyzes the compiler’s assembly output to identify source lines that a
 Go may remove entire branches when it can statically determine that a condition is always true or always false. This frequently happens with typed nil values returned through interfaces, leading to subtle logical issues. Blazer highlights these cases by detecting missing source lines in the final assembly.
 
 ## How Blazer Works
-1. Compile the file with -gcflags=-S to obtain the assembly output.
+1. Compile the file with `-gcflags=-S` to obtain the assembly output.
 2. Extract the line numbers that appear in the compiler output.
 3. Compare them with the original source file.
 4. Any source line that does not appear in the assembly has been removed by optimization.
