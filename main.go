@@ -7,9 +7,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 // Example of the typed-nil interface problem.
@@ -52,16 +55,13 @@ func main() {
 		panic(err)
 	}
 
-	log.Printf("CWD: %v", cwd)
+	log.Printf("Current Working Directory: %v", cwd)
 	cmd := exec.Command("go", "build", "-gcflags", "-S", "./...")
 	log.Printf("Compilation for assembly inspection")
 	
 	go func() { cmd.Start() }()
-	stdout, err := cmd.StderrPipe() 
+	stdout, err := cmd.StderrPipe()
 	if err != nil {
-		panic(err)
-	}
-	if err := cmd.Start(); err != nil {
 		panic(err)
 	}
 
@@ -111,7 +111,53 @@ func main() {
 		assemblyLines[fileName] = newSlice
 	}
 
-	log.Printf("assembly information were prepared, ready to process AST")
 	
+	log.Printf("assembly information were prepared, ready to process AST")
 
+	// Process AST.
+	config := &packages.Config{
+		Mode: packages.NeedSyntax | packages.NeedFiles | packages.NeedTypes,
+		Tests: true,
+	}
+
+	project, err := packages.Load(config, "./...")
+	if err != nil {
+		panic(err)
+	}
+	for _, pkg := range project {
+		for _, file := range pkg.Syntax {
+			// Ignore generated files
+			filename := pkg.Fset.Position(file.Pos()).Filename
+			if strings.Contains(filename, "generated") {
+				continue
+			}
+			var currentFunc string
+			ast.Inspect(file, func(node ast.Node) bool {
+				if funcDecl, ok := node.(*ast.FuncDecl); ok {
+					currentFunc = funcDecl.Name.Name
+					return true
+				}
+				_, ok := node.(*ast.IfStmt)
+				if !ok {
+					return true
+				}
+				if !checkSubtreeComplexity(node) {
+					return false
+				}
+				start, end := pkg.Fset.Position(node.Pos()), pkg.Fset.Position(node.End())
+				startLine, endLine := start.Line, end.Line
+
+				// Check assembly
+				lines, ok := assemblyLines[start.Filename]
+				if !ok { 
+					return true 
+				}
+				position, _ := slices.BinarySearch(lines, startLine)
+				if position >= len(lines) || lines[position] > endLine {
+					log.Printf("The Go Compiler removed this block: func=%s file=%s line=%d\n", currentFunc, start.Filename, start.Line)
+				}
+				return true
+			})
+		}
+	}
 }
