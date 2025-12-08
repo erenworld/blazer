@@ -33,7 +33,6 @@ func checkSubtreeComplexity(node ast.Node) bool {
 
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch node.(type) {
-		// A function call almost always has some effect.
 		case *ast.CallExpr:
 			isComplex = true
 		case *ast.ReturnStmt:
@@ -75,7 +74,6 @@ func main() {
 		if cwdIndex == -1 {
 			continue
 		}
-		// log.Println("FOUND CWD IN:", line)
 
 		// Extract file path and line number from assembly output.
 		colonIndex := strings.Index(line[cwdIndex:], ":")
@@ -114,5 +112,6 @@ func main() {
 	}
 
 	log.Printf("assembly information were prepared, ready to process AST")
+	
 
 }
